@@ -29,7 +29,7 @@ std::string hasData(std::string s) {
 int main()
 {
   uWS::Hub h;
-
+  
   // Create a Kalman Filter instance
   UKF ukf;
 
@@ -76,6 +76,7 @@ int main()
           		meas_package.raw_measurements_ << px, py;
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
+              
           } else if (sensor_type.compare("R") == 0) {
 
       	  		meas_package.sensor_type_ = MeasurementPackage::RADAR;
@@ -89,6 +90,7 @@ int main()
           		meas_package.raw_measurements_ << ro,theta, ro_dot;
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
+              
           }
           float x_gt;
     	  float y_gt;
@@ -106,7 +108,7 @@ int main()
     	  ground_truth.push_back(gt_values);
           
           //Call ProcessMeasurment(meas_package) for Kalman filter
-    	  ukf.ProcessMeasurement(meas_package);    	  
+    	  //ukf.ProcessMeasurement(meas_package);
 
     	  //Push the current estimated x,y positon from the Kalman filter's state vector
 
@@ -127,7 +129,9 @@ int main()
     	  
     	  estimations.push_back(estimate);
 
-    	  VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
+            VectorXd RMSE(4);
+            RMSE << 1.0, 1.0, 1.0, 1.0;
+          //VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
 
           json msgJson;
           msgJson["estimate_x"] = p_x;

@@ -59,13 +59,13 @@ public:
   VectorXd weights_;
 
   ///* State dimension
-  int n_x_;
+  int n_x_=5;
 
   ///* Augmented state dimension
-  int n_aug_;
+  int n_aug_ = n_x_+2;
 
   ///* Sigma point spreading parameter
-  double lambda_;
+  double lambda_= 3-n_x_;
 
 
   /**
@@ -82,7 +82,7 @@ public:
    * ProcessMeasurement
    * @param meas_package The latest measurement data of either radar or laser
    */
-  void ProcessMeasurement(MeasurementPackage meas_package);
+  void ProcessMeasurement(MeasurementPackage &meas_package);
 
   /**
    * Prediction Predicts sigma points, the state, and the state covariance
@@ -102,6 +102,8 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+    
+  void AugmentedSigmaPoints(MatrixXd* Xsig_out);
 };
 
 #endif /* UKF_H */
