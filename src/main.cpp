@@ -61,7 +61,6 @@ int main()
           MeasurementPackage meas_package;
           istringstream iss(sensor_measurment);
     	  long long timestamp;
-
     	  // reads first element from the current line
     	  string sensor_type;
     	  iss >> sensor_type;
@@ -90,8 +89,8 @@ int main()
           		meas_package.raw_measurements_ << ro,theta, ro_dot;
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
-              
           }
+            
           float x_gt;
     	  float y_gt;
     	  float vx_gt;
@@ -108,7 +107,7 @@ int main()
     	  ground_truth.push_back(gt_values);
           
           //Call ProcessMeasurment(meas_package) for Kalman filter
-    	  //ukf.ProcessMeasurement(meas_package);
+    	  ukf.ProcessMeasurement(meas_package);
 
     	  //Push the current estimated x,y positon from the Kalman filter's state vector
 
