@@ -24,6 +24,13 @@ public:
   */
   VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
 
+private:
+    
+  // Variables for RMSE computation
+  VectorXd mse;
+  VectorXd alpha;  /* Used for Convex Averaging */
+  VectorXd beta;
+  VectorXd rmse;
 };
 
 #endif /* TOOLS_H_ */
