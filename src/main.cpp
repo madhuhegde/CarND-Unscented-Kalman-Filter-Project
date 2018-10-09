@@ -2,29 +2,13 @@
 #include <iostream>
 #include "json.hpp"
 #include <math.h>
-#include "ukf.h"
 #include "tools.h"
+#include "ukf.h"
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
-// for convenience
-using json = nlohmann::json;
-
-// Checks if the SocketIO event has JSON data.
-// If there is data the JSON object in string format will be returned,
-// else the empty string "" will be returned.
-std::string hasData(std::string s) {
-  auto found_null = s.find("null");
-  auto b1 = s.find_first_of("[");
-  auto b2 = s.find_first_of("]");
-  if (found_null != std::string::npos) {
-    return "";
-  }
-  else if (b1 != std::string::npos && b2 != std::string::npos) {
-    return s.substr(b1, b2 - b1 + 1);
-  }
-  return "";
-}
 
 int main()
 {
@@ -37,29 +21,24 @@ int main()
   Tools tools;
   vector<VectorXd> estimations;
   vector<VectorXd> ground_truth;
+  vector<string> sensor_type_str;
+  vector<double> NIS_value;
+  vector<VectorXd> RMSE_value;
 
-  h.onMessage([&ukf,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
-    // "42" at the start of the message means there's a websocket message event.
-    // The 4 signifies a websocket message
-    // The 2 signifies a websocket event
+  // hardcoded input/output file with laser and radar measurements
+  string in_file_name_ = "../data/obj_pose-laser-radar-synthetic-input.txt";
+  string out_file_name_ = "../data/obj_pose-laser-radar-synthetic-output.txt";
+  ifstream in_file(in_file_name_.c_str(),std::ifstream::in);
+  ofstream out_file(out_file_name_.c_str(), ofstream::out);
 
-    if (length && length > 2 && data[0] == '4' && data[1] == '2')
+    string line;
+    // set i to get only first 6 measurments
+    //int i = 0;
+    while(getline(in_file, line))// && (i<=6))
     {
-
-      auto s = hasData(std::string(data));
-      if (s != "") {
-      	
-        auto j = json::parse(s);
-
-        std::string event = j[0].get<std::string>();
-        
-        if (event == "telemetry") {
-          // j[1] is the data JSON object
-          
-          string sensor_measurment = j[1]["sensor_measurement"];
-          
+          //i = i+1;
           MeasurementPackage meas_package;
-          istringstream iss(sensor_measurment);
+          istringstream iss(line);
     	  long long timestamp;
     	  // reads first element from the current line
     	  string sensor_type;
@@ -105,10 +84,23 @@ int main()
     	  gt_values(2) = vx_gt;
     	  gt_values(3) = vy_gt;
     	  ground_truth.push_back(gt_values);
-          
+        
+        
+        
           //Call ProcessMeasurment(meas_package) for Kalman filter
     	  ukf.ProcessMeasurement(meas_package);
-
+        
+          sensor_type_str.push_back(sensor_type);
+          if (sensor_type.compare("L") == 0)
+          {
+            NIS_value.push_back(ukf.NIS_laser_);
+          }
+        
+          if (sensor_type.compare("R") == 0)
+          {
+            NIS_value.push_back(ukf.NIS_radar_);
+          }
+        
     	  //Push the current estimated x,y positon from the Kalman filter's state vector
 
     	  VectorXd estimate(4);
@@ -128,64 +120,54 @@ int main()
     	  
     	  estimations.push_back(estimate);
 
-    	  VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
-
-          json msgJson;
-          msgJson["estimate_x"] = p_x;
-          msgJson["estimate_y"] = p_y;
-          msgJson["rmse_x"] =  RMSE(0);
-          msgJson["rmse_y"] =  RMSE(1);
-          msgJson["rmse_vx"] = RMSE(2);
-          msgJson["rmse_vy"] = RMSE(3);
-          auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
-          // std::cout << msg << std::endl;
-          ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-	  
-        }
-      } else {
+          /* Compute RMSE */
+          VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
+          RMSE_value.push_back(RMSE);
         
-        std::string msg = "42[\"manual\",{}]";
-        ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-      }
-    }
-
-  });
-
-  // We don't need this since we're not using HTTP but if it's removed the program
-  // doesn't compile :-(
-  h.onHttpRequest([](uWS::HttpResponse *res, uWS::HttpRequest req, char *data, size_t, size_t) {
-    const std::string s = "<h1>Hello world!</h1>";
-    if (req.getUrl().valueLength == 1)
+     }
+    
+    /* Store output into a file - obj_pose-laser-radar-synthetic-output.txt */
+    out_file << "Sensor" << "\t";
+    out_file << "px_state" << "\t";
+    out_file << "py_state" << "\t";
+    out_file << "vx_state" << "\t";
+    out_file << "vy_state" << "\t";
+    out_file << "NIS_value" << "\t";
+    out_file << "RMSE[0]" << "\t";
+    out_file << "RMSE[1]" << "\t";
+    out_file << "RMSE[2]" << "\t";
+    out_file << "RMSE[3]" << "\n";
+    
+    size_t number_of_measurements = sensor_type_str.size();
+    out_file << std::fixed;
+    out_file << std::setprecision(3);
+    
+    for (size_t k = 0; k < number_of_measurements; ++k)
     {
-      res->end(s.data(), s.length());
+        VectorXd estimate = estimations[k];
+        VectorXd RMSE = RMSE_value[k];
+        
+        out_file <<"  "<< sensor_type_str[k] << "\t\t";
+        out_file << estimate[0] << "\t\t";
+        out_file << estimate[1] << "\t\t";
+        out_file << estimate[2] << "\t\t";
+        out_file << estimate[3] << "\t\t";
+        out_file << NIS_value[k] << "\t\t";
+        out_file << RMSE[0]   << "\t";
+        out_file << RMSE[1]   << "\t";
+        out_file << RMSE[2]   << "\t";
+        out_file << RMSE[3]   << "\n";
+
     }
-    else
-    {
-      // i guess this should be done more gracefully?
-      res->end(nullptr, 0);
+    if(in_file.is_open()){
+        in_file.close();
     }
-  });
-
-  h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
-    std::cout << "Connected!!!" << std::endl;
-  });
-
-  h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
-    ws.close();
-    std::cout << "Disconnected" << std::endl;
-  });
-
-  int port = 4567;
-  if (h.listen(port))
-  {
-    std::cout << "Listening to port " << port << std::endl;
-  }
-  else
-  {
-    std::cerr << "Failed to listen to port" << std::endl;
-    return -1;
-  }
-  h.run();
+    
+    // close files
+    if (out_file.is_open()) {
+        out_file.close();
+    }
+    
 }
 
 
