@@ -37,14 +37,15 @@ int main()
     while(getline(in_file, line))// && (i<=6))
     {
           //i = i+1;
-          MeasurementPackage meas_package;
-          istringstream iss(line);
-    	  long long timestamp;
-    	  // reads first element from the current line
-    	  string sensor_type;
-    	  iss >> sensor_type;
+       MeasurementPackage meas_package;
+       istringstream iss(line);
+       long long timestamp;
+        
+       // reads first element from the current line
+       string sensor_type;
+       iss >> sensor_type;
 
-    	  if (sensor_type.compare("L") == 0) {
+       if (sensor_type.compare("L") == 0) {
       	  		meas_package.sensor_type_ = MeasurementPackage::LASER;
           		meas_package.raw_measurements_ = VectorXd(2);
           		float px;
@@ -55,7 +56,7 @@ int main()
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
               
-          } else if (sensor_type.compare("R") == 0) {
+        } else if (sensor_type.compare("R") == 0) {
 
       	  		meas_package.sensor_type_ = MeasurementPackage::RADAR;
           		meas_package.raw_measurements_ = VectorXd(3);
@@ -68,11 +69,11 @@ int main()
           		meas_package.raw_measurements_ << ro,theta, ro_dot;
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
-          }
+        }
             
-          if(((sensor_type.compare("L") == 0) && (ukf.use_laser_)) ||
+        if(((sensor_type.compare("L") == 0) && (ukf.use_laser_)) ||
              ((sensor_type.compare("R") == 0) && (ukf.use_radar_)))
-          {
+        {
               
           float x_gt;
     	  float y_gt;
@@ -127,9 +128,9 @@ int main()
           /* Compute RMSE */
           VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
           RMSE_value.push_back(RMSE);
-         }
+       }
         
-     }
+    }
     
     /* Store output into a file - obj_pose-laser-radar-synthetic-output.txt */
     out_file << "Sensor" << "\t";
