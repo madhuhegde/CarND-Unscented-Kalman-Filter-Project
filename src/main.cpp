@@ -70,6 +70,10 @@ int main()
           		meas_package.timestamp_ = timestamp;
           }
             
+          if(((sensor_type.compare("L") == 0) && (ukf.use_laser_)) ||
+             ((sensor_type.compare("R") == 0) && (ukf.use_radar_)))
+          {
+              
           float x_gt;
     	  float y_gt;
     	  float vx_gt;
@@ -83,10 +87,10 @@ int main()
     	  gt_values(1) = y_gt; 
     	  gt_values(2) = vx_gt;
     	  gt_values(3) = vy_gt;
-    	  ground_truth.push_back(gt_values);
         
         
-        
+          ground_truth.push_back(gt_values);
+
           //Call ProcessMeasurment(meas_package) for Kalman filter
     	  ukf.ProcessMeasurement(meas_package);
         
@@ -123,6 +127,7 @@ int main()
           /* Compute RMSE */
           VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
           RMSE_value.push_back(RMSE);
+         }
         
      }
     
