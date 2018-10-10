@@ -37,6 +37,13 @@ public:
   ///* Measurement Noise Variance for Laser
   MatrixXd R_radar_;
   
+  MatrixXd H_laser_;
+    
+  // Unity matrix
+  MatrixXd I_;
+    
+  // Process noise covariance matrix
+  MatrixXd Q_;
 
   ///* time when the state is true, in us
   long long time_us_;
@@ -78,6 +85,8 @@ public:
   double NIS_laser_;
     
   double NIS_radar_;
+    
+    
 
   /**
    * Constructor
